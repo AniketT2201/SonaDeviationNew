@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "sona-deviation-client-side-solution",
+    "id": "f44b312c-c589-413a-b89c-e9895913588e",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.22.2"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "SonaDeviation description"
+      },
+      "longDescription": {
+        "default": "SonaDeviation description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "sona-deviation Feature",
+        "description": "The feature that activates elements of the sona-deviation solution.",
+        "id": "84a7f3f4-b08a-495d-927a-1a7d72b6ab39",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/sona-deviation.sppkg"
+  }
+}
