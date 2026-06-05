@@ -87,6 +87,8 @@ export const DeviationViewForm = (props: ISonaDeviationProps) => {
         const [WorkflowJSX, setWorkflowJSX] = React.useState(null);
 
         const [Comments, setComments] = React.useState("");
+        const [selectedRiskAssessment, setSelectedRiskAssessment] = React.useState("");
+        const [RiskAssessmentDescription, setRiskAssessmentDescription] = React.useState("");
 
 
 
@@ -104,10 +106,10 @@ export const DeviationViewForm = (props: ISonaDeviationProps) => {
         };
 
         React.useEffect(() => {
-            if (ApprovalMatrixdata) {
+            if (ApprovalMatrixdata && ApprovalMatrixdata.length > 0 && WorkflowHistorydata) {
                 displayWorkflow();
             }
-        }, [ApprovalMatrixdata])
+        }, [ApprovalMatrixdata, WorkflowHistorydata, Stage])
 
         const displayWorkflow = () => {
             const wf: JSX.Element[] = [];
@@ -115,21 +117,62 @@ export const DeviationViewForm = (props: ISonaDeviationProps) => {
             // const _wf = approverJson.filter((item) => item.required === true);
             let isActive;
             let notActive = false;
+
+            // Get latest workflow history entry
+            const lastHistory = WorkflowHistorydata && WorkflowHistorydata.length > 0
+                ? WorkflowHistorydata[WorkflowHistorydata.length - 1]
+                : null;
+            
+            // Check if rejected
+            const isRejected =
+                lastHistory &&
+                lastHistory.CurrentStatus === "Rejected";
+
+            // Find rejected role
+            let rejectedRole = "";
+
+            if (isRejected && lastHistory.ActionTaken) {
+                rejectedRole = lastHistory.ActionTaken.split(" ")[0];
+            }
+            // Find rejected role index
+            const rejectedIndex = ApprovalMatrixdata
+                .filter(m => m.required === true)
+                .findIndex(m => m.Role === rejectedRole);
             ApprovalMatrixdata.filter(m => m.required === true).forEach((m, i) => {
-                //if (m.required === true) {
-                if (notActive === false && Stage !== 99) {
-                    if (Stage === i) {
-                        isActive = 'activeApprover';
-                        notActive = true;
+                // =========================
+                // REJECTED LOGIC
+                // =========================
+                if (isRejected) {
+                    if (m.Role === rejectedRole) {
+                        // Rejected approver → RED
+                        isActive = "rejected";
+                    }
+                    else if (i < rejectedIndex) {
+                        // Completed before rejection → GREEN
+                        isActive = "beforeactiveApprover";
                     }
                     else {
-                        isActive = 'beforeactiveApprover';
+                        // Pending after rejection → YELLOW
+                        isActive = "overrideStage";
                     }
                 }
+                // =========================
+                // NORMAL APPROVAL FLOW
+                // =========================
                 else {
-                    isActive = 'overrideStage';
+                    if (notActive === false && Stage !== 99) {
+                        if (Stage === i) {
+                            isActive = "activeApprover";
+                            notActive = true;
+                        }
+                        else {
+                            isActive = "beforeactiveApprover";
+                        }
+                    }
+                    else {
+                        isActive = "overrideStage";
+                    }
                 }
-
                 wf.push(
                     <ul className="main-menu">
                         <li className={`${m.Role} ${isActive}`.trim()}>
@@ -137,7 +180,6 @@ export const DeviationViewForm = (props: ISonaDeviationProps) => {
                         </li>
                     </ul>
                 );
-                //}
             });
 
             setWorkflowJSX(wf);
@@ -184,7 +226,7 @@ export const DeviationViewForm = (props: ISonaDeviationProps) => {
                         "EngineeringRemark", "EngineeringFunctional", "EngineeringFitment", "EngineeringSpecialNote", "EngineeringDeviationRecommended",
                         "EngineeringName", "EngineeringProductionDate", "EngineeringDate", "DeviationType", "Status", "SpecialApproval",
                         "PlantHeadRemark", "PlantHeadDeviationAccepted", "PlantHeadProductionDate", "COORemark",
-                        "PlantHeadDate", "PlantHeadEffectiveness", "AttachmentFiles", "Comments" 
+                        "PlantHeadDate", "PlantHeadEffectiveness", "AttachmentFiles", "Comments", "RiskAssessment", "RiskAssessmentDescription" 
                     ).expand("AttachmentFiles")();
                 setPartNo(item.PartNo || "");
                 setDeviationNo(item.DeviationNo || "");
@@ -226,6 +268,9 @@ export const DeviationViewForm = (props: ISonaDeviationProps) => {
                 setPlantHeadDate(item.PlantHeadDate || "");
                 setPlantHeadEffectiveness(item.PlantHeadEffectiveness || "");
                 setComments(item.Comments || "");
+                setSelectedRiskAssessment(item.RiskAssessment || "");
+                setRiskAssessmentDescription(item.RiskAssessmentDescription || "");
+
 
                 let parsedDetails = [];
                 if (item.Details) {
@@ -374,11 +419,19 @@ export const DeviationViewForm = (props: ISonaDeviationProps) => {
                                             </div>
                                         </div>
                                         {isEngineeringDashboard && (
-                                            <div className='col-md-4'>
-                                                <label htmlFor="Comments" className='font'>Comments </label> : &nbsp;&nbsp;
+                                            <div className='col-md-3'>
+                                                <label htmlFor="Comments" className='font'>Comments </label>  <br></br>
                                                 <div><label className='fonttext'>{Comments}</label></div>
                                             </div>
                                         )}
+                                        <div className='col-md-3'>
+                                            <label htmlFor="RiskAssessment" className='font'>Risk Assessment</label> <br></br>
+                                            <label className='fonttext'>{selectedRiskAssessment}</label>
+                                        </div>
+                                        <div className='col-md-3'>
+                                            <label htmlFor="RiskAssessmentDescription" className='font'>Risk Assessment Description </label> <br></br>
+                                            <label className='fonttext'>{RiskAssessmentDescription}</label>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -621,6 +674,34 @@ export const DeviationViewForm = (props: ISonaDeviationProps) => {
                                                 Exit
                                             </Link>
                                         </div>
+                                    </div>
+                                    <div className="mt-5">
+                                        <table className="table table-bordered mb-0">
+                                            <tbody>
+                                            <tr>
+                                                <td
+                                                className="text-start font"
+                                                style={{ width: "40%", padding: "4px 8px", lineHeight: "1.2" }}
+                                                >
+                                                Format No. - SonaBLW/F/QA/29
+                                                </td>
+
+                                                <td
+                                                className="text-center font"
+                                                style={{ width: "20%", padding: "4px 8px", lineHeight: "1.2" }}
+                                                >
+                                                Rev. No. - 03
+                                                </td>
+
+                                                <td
+                                                className="text-end font"
+                                                style={{ width: "40%", padding: "4px 8px", lineHeight: "1.2" }}
+                                                >
+                                                w.e.f. - 17.02.2024
+                                                </td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>

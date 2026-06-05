@@ -10,6 +10,8 @@ import "../Pages/Css/NewRequest.scss";
 import { sp } from "@pnp/sp/presets/all";
 import "@pnp/sp/webs";
 import "@pnp/sp/site-users/web";
+import "@pnp/sp/profiles";
+
 
 
 import { Web } from "@pnp/sp/webs";
@@ -40,12 +42,19 @@ export const NewRequest = (props: ISonaDeviationProps) => {
 
     // const [DeviationNo, setDeviationNo] = React.useState("");
 
-    const [ConcernedDepartmentOptions, setConcernedDepartmentOptions] = React.useState<IDropdownOption[]>([]);
+    const [ConcernedDepartmentOptions, setConcernedDepartmentOptions] = React.useState<any | string>("");
     const [selectedConcernedDepartment, setSelectedConcernedDepartment] = React.useState<string | number>();
 
     const [BatchNo, setBatchNo] = React.useState("");
 
     const [PlantNameOptions, setPlantNameOptions] = React.useState<IDropdownOption[]>([]);
+    const [RiskAssessment, setRiskAssessment] = React.useState<IDropdownOption[]>([
+        { key: "Low", text: "Low" },
+        { key: "Medium", text: "Medium" },
+        { key: "High", text: "High" }
+        ]);
+    const [selectedRiskAssessment, setSelectedRiskAssessment] = React.useState("");
+    const [RiskAssessmentDescription, setRiskAssessmentDescription] = React.useState("");
 
     const [ProductionQTY, setProductionQTY] = React.useState("");
 
@@ -53,7 +62,9 @@ export const NewRequest = (props: ISonaDeviationProps) => {
     const [ProductionDate, setProductionDate] = React.useState("");
 
 
-    const [SelectedDeviationType, setSelectedDeviationType] = React.useState<number | undefined>();
+    const [SelectedDeviationType, setSelectedDeviationType] = React.useState<any | string>("");
+    const [NPDProductionOptions, setNPDProductionOptions] =
+    useState<IDropdownOption[]>([]);
 
     const [selectedPlantId, setSelectedPlantId] = React.useState<number | undefined>();
     const [selectedPlantName, setSelectedPlantName] = React.useState<string>("");
@@ -163,7 +174,7 @@ export const NewRequest = (props: ISonaDeviationProps) => {
     }, [props.currentSPContext]);
 
 
-    const loadWorkflow = async (plant?: number, deviationType?: number) => {
+    const loadWorkflow = async (plant?: number, deviationType?: string | number) => {
 
         if (!plant || !deviationType) {
             setWorkflowJSX(null);
@@ -174,10 +185,10 @@ export const NewRequest = (props: ISonaDeviationProps) => {
         displayWorkflow();
     };
 
-    const NPDProductionOptions: IDropdownOption[] = [
-        { key: "NPD", text: "NPD" },
-        { key: "Production", text: "Production" },
-    ];
+    // const NPDProductionOptions: IDropdownOption[] = [
+    //     { key: "NPD", text: "NPD" },
+    //     { key: "Production", text: "Production" },
+    // ];
 
     const userProfile = async () => {
         const userprofiledata = await UserProfileOps().getLoggUserProfile(props);
@@ -195,7 +206,7 @@ export const NewRequest = (props: ISonaDeviationProps) => {
             id: 1,
             parameters: undefined as number | undefined,        // for dropdown selectedKey
             parameterText: "" as string,                        // for saving
-
+            RiskAssessment: "" as string | undefined,      // for dropdown selectedKey
             subParameter: undefined as number | undefined,      // for dropdown selectedKey
             subParameterText: "" as string,                     // for saving
             subParameterOptions: [] as IDropdownOption[],
@@ -226,6 +237,7 @@ export const NewRequest = (props: ISonaDeviationProps) => {
                 id: rows.length + 1,
                 parameters: undefined,
                 parameterText: "",
+                RiskAssessment: "",
                 subParameter: undefined,
                 subParameterText: "",
                 subParameterOptions: [],
@@ -250,6 +262,7 @@ export const NewRequest = (props: ISonaDeviationProps) => {
                 id: 1,
                 parameters: undefined,
                 parameterText: "",
+                RiskAssessment: "",
                 subParameter: undefined,
                 subParameterText: "",
                 subParameterOptions: [],
@@ -267,7 +280,7 @@ export const NewRequest = (props: ISonaDeviationProps) => {
         setRows(updatedRows);
     };
 
-    const fetchApprovalMatrix = async (plant?: number, deviationType?: number) => {
+    const fetchApprovalMatrix = async (plant?: number, deviationType?: string | number) => {
 
         const spCrudOps = await SPCRUDOPS();
 
@@ -325,6 +338,7 @@ export const NewRequest = (props: ISonaDeviationProps) => {
             });
         });
         approverJson.current = matrix;
+        return parentItems;
         //approvalMatrix.current = parentItems;        
     };
 
@@ -606,7 +620,7 @@ export const NewRequest = (props: ISonaDeviationProps) => {
         //     return;
         // }
 
-        if (!selectedConcernedDepartment) {
+        if (!ConcernedDepartmentOptions) {
             alert("Please select the Concerned Department");
             return;
         }
@@ -637,6 +651,16 @@ export const NewRequest = (props: ISonaDeviationProps) => {
 
         if (!DeviationAttachFile) {
             alert("Please upload attachment");
+            return;
+        }
+
+        if (!selectedRiskAssessment) {
+            alert("Please select the Risk Assessment");
+            return;
+        }
+
+        if (!RiskAssessmentDescription) {
+            alert("Please enter the Risk Assessment Description");
             return;
         }
 
@@ -714,9 +738,11 @@ export const NewRequest = (props: ISonaDeviationProps) => {
                 Details: tabledata,
                 PartNo: PartNo,
                 DeviationNo: deviationNumber,
-                SupplierName: selectedConcernedDepartment,
+                SupplierName: ConcernedDepartmentOptions,
                 BatchNo: BatchNo,
                 PlantName: selectedPlantName,
+                RiskAssessment: selectedRiskAssessment,
+                RiskAssessmentDescription: RiskAssessmentDescription,
                 // ProductionQTY: ProductionQTY,
                 ProductionQTY: ProductionQTY,
                 RequestorName: currentUserRef.current?.Title || "",
@@ -789,21 +815,17 @@ export const NewRequest = (props: ISonaDeviationProps) => {
 
     const ConcernedDepartmentChoices = async () => {
         try {
-            const web = Web(props.currentSPContext.pageContext.web.absoluteUrl);
+            sp.setup({
+                spfxContext: props.currentSPContext
+            });
 
-            const field: any = await web.lists
-                .getByTitle("DeviationDetails")
-                .fields
-                .getByInternalNameOrTitle("SupplierName")();
-
-            const choices = field.Choices || [];
-
-            const options = choices.map((choice: string) => ({
-                key: choice,
-                text: choice
-            }));
-
-            setConcernedDepartmentOptions(options);
+            const profile = await sp.profiles.myProperties.get();
+            const department = profile?.UserProfileProperties.find(
+                (item: any) => item.Key === "Department"
+            )?.Value;
+            if (department) {
+                setConcernedDepartmentOptions(department);
+            }
 
         } catch (error) {
             console.error("Error loading ConcernedDepartment choices:", error);
@@ -879,7 +901,7 @@ export const NewRequest = (props: ISonaDeviationProps) => {
                                 <div className='main-formcontainer'>
                                     <div className='row mb-20'>
                                         <div className='col-md-4'>
-                                            <label htmlFor="Part No" className='font'>Part No <span className="Mantorystar">*</span></label>
+                                            <label htmlFor="Part No" className='font'>Part No <span className="Mantorystar">* Please refer to this format for the Part Number property: TM01S1</span></label>
                                             <input type="text" className='form-control' onChange={e => setPartNo(e.target.value)} />
                                         </div>
                                         {/* <div className='col-md-4'>
@@ -888,11 +910,12 @@ export const NewRequest = (props: ISonaDeviationProps) => {
                                         </div> */}
                                         <div className='col-md-4'>
                                             <label htmlFor="Concerned Department" className='font'>Concerned Department <span className="Mantorystar">*</span></label>
-                                            <Dropdown
+                                            <input type="text" className='form-control' value={ConcernedDepartmentOptions} readOnly />
+                                            {/* <Dropdown
                                                 options={ConcernedDepartmentOptions}
                                                 selectedKey={selectedConcernedDepartment}
                                                 onChange={(e, option) => setSelectedConcernedDepartment(option?.key)}
-                                            />
+                                            /> */}
                                         </div>
                                     </div>
                                     <div className='row mb-20'>
@@ -910,6 +933,24 @@ export const NewRequest = (props: ISonaDeviationProps) => {
                                                     const plantName = option?.text as string;
                                                     setSelectedPlantId(plantId);     // ✅ for dropdown
                                                     setSelectedPlantName(plantName);  // ✅ for saving
+                                                    // ✅ LOAD DEVIATION TYPES BASED ON PLANT
+                                                    const approvalItems = await fetchApprovalMatrix();
+                                                    const deviationTypes = approvalItems
+                                                        .filter(item => item?.PlantName?.ID === plantId)
+                                                        .map(item => item?.DeviationType)
+                                                        .filter((value, index, self) =>
+                                                            value && self.indexOf(value) === index
+                                                        );
+
+                                                    setNPDProductionOptions(
+                                                        deviationTypes.map(type => ({
+                                                            key: type,
+                                                            text: type
+                                                        }))
+                                                    );
+
+                                                    // reset deviation type
+                                                    setSelectedDeviationType("");
                                                     await loadWorkflow(plantId, SelectedDeviationType);
 
                                                     // ✅ FILTER PARAMETERS BASED ON PLANT
@@ -979,6 +1020,31 @@ export const NewRequest = (props: ISonaDeviationProps) => {
                                                 className="upload-full-width">
                                                 <Button className="upload-btn-full" icon={<UploadOutlined />} iconPosition="end"></Button>
                                             </Upload>
+                                        </div>
+                                        <div className='col-md-4'>
+                                            <label className='font'>Risk Assessment <span className="Mantorystar">*</span></label>
+                                            <Dropdown
+                                                options={RiskAssessment}
+                                                selectedKey={selectedRiskAssessment}
+                                                onChange={(e, option) => { 
+                                                    const selectedText = option?.text as string;
+                                                    setSelectedRiskAssessment(selectedText);
+                                                    const updatedRows = [...rows];
+                                                    updatedRows[0].RiskAssessment = selectedText;
+                                                    setRows(updatedRows);
+                                                }} className="formtext-control"
+                                            />
+                                        </div>
+                                        <div className='col-md-4'>
+                                            <label htmlFor="RiskAssessmentDescription" className='font'>Risk Assessment Description <span className="Mantorystar">*</span></label>
+                                            <textarea className='form-control' style={{ resize: "none", overflowY: "hidden", height: "auto", fontSize: "13px" }} value={RiskAssessmentDescription}
+                                                onChange={(e) => {
+                                                    const textarea = e.currentTarget;
+                                                    textarea.style.height = "auto";
+                                                    textarea.style.height = textarea.scrollHeight + "px";
+                                                    setRiskAssessmentDescription(textarea.value);
+                                                }}
+                                            ></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -1181,11 +1247,40 @@ export const NewRequest = (props: ISonaDeviationProps) => {
                                         </div>
 
                                     </div>
+                                    <div className="mt-5">
+                                        <table className="table table-bordered mb-0">
+                                            <tbody>
+                                            <tr>
+                                                <td
+                                                className="text-start font"
+                                                style={{ width: "40%", padding: "4px 8px", lineHeight: "1.2" }}
+                                                >
+                                                Format No. - SonaBLW/F/QA/29
+                                                </td>
+
+                                                <td
+                                                className="text-center font"
+                                                style={{ width: "20%", padding: "4px 8px", lineHeight: "1.2" }}
+                                                >
+                                                Rev. No. - 03
+                                                </td>
+
+                                                <td
+                                                className="text-end font"
+                                                style={{ width: "40%", padding: "4px 8px", lineHeight: "1.2" }}
+                                                >
+                                                w.e.f. - 17.02.2024
+                                                </td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
             </div>
 
         </div>

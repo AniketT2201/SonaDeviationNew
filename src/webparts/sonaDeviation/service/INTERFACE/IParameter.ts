@@ -4,4 +4,5 @@ export interface IParameterType {
     PlantName?: string;
     ParameterType: string;
     SubParameter?: string;
+    DeviationType?: string;
 }

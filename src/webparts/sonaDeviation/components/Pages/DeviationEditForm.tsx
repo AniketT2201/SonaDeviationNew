@@ -65,7 +65,7 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
 
         // ----------------------------- ConcernedDepartment part ---------------------------
 
-        const [ConcernedDepartmentOptions, setConcernedDepartmentOptions] = React.useState<IDropdownOption[]>([]);
+        const [ConcernedDepartmentOptions, setConcernedDepartmentOptions] = React.useState<any | string>("");
         const [selectedConcernedDepartment, setSelectedConcernedDepartment] = React.useState<string | number>();
 
         // ---------------------------------------------------------------------------
@@ -114,6 +114,13 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
         const [PlantHeadDate, setPlantHeadDate] = React.useState("");
         const [PlantHeadEffectiveness, setPlantHeadEffectiveness] = React.useState("");
         const [Status, setStatus] = React.useState("");
+        const [RiskAssessment, setRiskAssessment] = React.useState<IDropdownOption[]>([
+                { key: "Low", text: "Low" },
+                { key: "Medium", text: "Medium" },
+                { key: "High", text: "High" }
+                ]);
+        const [selectedRiskAssessment, setSelectedRiskAssessment] = React.useState("");
+        const [RiskAssessmentDescription, setRiskAssessmentDescription] = React.useState("");
 
         // ------------------------------------------------------------------------------------
 
@@ -175,33 +182,80 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
 
         }, []);
 
-        const displayWorkflow = () => {
+        React.useEffect(() => {
+            if (ApprovalMatrixdata && ApprovalMatrixdata.length > 0 && WorkflowHistorydata) {
+                displayWorkflow();
+            }
+        }, [ApprovalMatrixdata, WorkflowHistorydata, Stage])
 
+        const displayWorkflow = () => {
             if (!approverJson.current || approverJson.current.length === 0) {
                 setWorkflowJSX(null);
                 return;
             }
-
             const wf: JSX.Element[] = [];
 
+            // const _wf = approverJson.filter((item) => item.required === true);
             let isActive;
             let notActive = false;
 
-            approverJson.current.filter(m => m.required === true).forEach((m, i) => {
+            // Get latest workflow history entry
+            const lastHistory = WorkflowHistorydata && WorkflowHistorydata.length > 0
+                ? WorkflowHistorydata[WorkflowHistorydata.length - 1]
+                : null;
+            
+            // Check if rejected
+            const isRejected =
+                lastHistory &&
+                lastHistory.CurrentStatus === "Rejected";
 
-                if (notActive === false && Stage !== 99) {
-                    if (Stage === i) {
-                        isActive = 'activeApprover';
-                        notActive = true;
-                    } else {
-                        isActive = 'beforeactiveApprover';
+            // Find rejected role
+            let rejectedRole = "";
+
+            if (isRejected && lastHistory.ActionTaken) {
+                rejectedRole = lastHistory.ActionTaken.split(" ")[0];
+            }
+            // Find rejected role index
+            const rejectedIndex = ApprovalMatrixdata
+                .filter(m => m.required === true)
+                .findIndex(m => m.Role === rejectedRole);
+            ApprovalMatrixdata.filter(m => m.required === true).forEach((m, i) => {
+                // =========================
+                // REJECTED LOGIC
+                // =========================
+                if (isRejected) {
+                    if (m.Role === rejectedRole) {
+                        // Rejected approver → RED
+                        isActive = "rejected";
                     }
-                } else {
-                    isActive = 'overrideStage';
+                    else if (i < rejectedIndex) {
+                        // Completed before rejection → GREEN
+                        isActive = "beforeactiveApprover";
+                    }
+                    else {
+                        // Pending after rejection → YELLOW
+                        isActive = "overrideStage";
+                    }
                 }
-
+                // =========================
+                // NORMAL APPROVAL FLOW
+                // =========================
+                else {
+                    if (notActive === false && Stage !== 99) {
+                        if (Stage === i) {
+                            isActive = "activeApprover";
+                            notActive = true;
+                        }
+                        else {
+                            isActive = "beforeactiveApprover";
+                        }
+                    }
+                    else {
+                        isActive = "overrideStage";
+                    }
+                }
                 wf.push(
-                    <ul className="main-menu" key={i}>
+                    <ul className="main-menu">
                         <li className={`${m.Role} ${isActive}`.trim()}>
                             {m.User}
                         </li>
@@ -363,12 +417,12 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
                     .getByTitle("DeviationDetails").items.getById(itemId)
                     .select("ID", "PartNo", "DeviationNo", "SupplierName", "BatchNo",
                         "PlantName", "ProductionQTY", "RequestorName", "ProductionDate",
-                        "Details", "ApprovalMatrix", "Stage", "WorkflowHistory", "DeviationType",
+                        "Details", "ApprovalMatrix", "Stage", "Status", "WorkflowHistory", "DeviationType",
                         "Remark", "Functional", "Fitment", "SpecialNote", "DeviationRecommended", "QualityName", "QualityProductionDate", "QualityDate",
                         "EngineeringRemark", "EngineeringFunctional", "EngineeringFitment", "EngineeringSpecialNote", "EngineeringDeviationRecommended",
                         "EngineeringName", "EngineeringProductionDate", "EngineeringDate", "SpecialApproval",
                         "PlantHeadRemark", "PlantHeadDeviationAccepted", "PlantHeadProductionDate", "COORemark",
-                        "PlantHeadDate", "PlantHeadEffectiveness", "NextApprover/ID", "AttachmentFiles", "Comments"
+                        "PlantHeadDate", "PlantHeadEffectiveness", "NextApprover/ID", "AttachmentFiles", "Comments", "RiskAssessment", "RiskAssessmentDescription"
                     ).expand("NextApprover,AttachmentFiles")();
                 setPartNo(item.PartNo || "");
                 setDeviationNo(item.DeviationNo || "");
@@ -413,8 +467,10 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
                 setPlantHeadDate(item.PlantHeadDate || "");
                 setPlantHeadEffectiveness(item.PlantHeadEffectiveness || "");
                 setSpecialApproval(item.SpecialApproval || "");
+                setSelectedRiskAssessment(item.RiskAssessment || "");
+                setRiskAssessmentDescription(item.RiskAssessmentDescription || "");
+
                 approverJson.current = JSON.parse(item.ApprovalMatrix);
-                displayWorkflow();
 
                 let parsedDetails: any[] = [];
 
@@ -521,7 +577,6 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
             }
 
             await fetchApprovalMatrix(plant, deviationType);
-            displayWorkflow();
         };
 
         const fetchApprovalMatrix = async (plant?: number, deviationType?: number) => {
@@ -588,22 +643,18 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
 
         const ConcernedDepartmentChoices = async () => {
             try {
-                const web = Web(props.currentSPContext.pageContext.web.absoluteUrl);
-
-                const field: any = await web.lists
-                    .getByTitle("DeviationDetails")
-                    .fields
-                    .getByInternalNameOrTitle("SupplierName")();
-
-                const choices = field.Choices || [];
-
-                const options = choices.map((choice: string) => ({
-                    key: choice,
-                    text: choice
-                }));
-
-                setConcernedDepartmentOptions(options);
-
+                sp.setup({
+                    spfxContext: props.currentSPContext
+                });
+    
+                const profile = await sp.profiles.myProperties.get();
+                const department = profile?.UserProfileProperties.find(
+                    (item: any) => item.Key === "Department"
+                )?.Value;
+                if (department) {
+                    setConcernedDepartmentOptions(department);
+                }
+    
             } catch (error) {
                 console.error("Error loading ConcernedDepartment choices:", error);
             }
@@ -657,7 +708,7 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
                 return;
             }
 
-            if (!selectedConcernedDepartment) {
+            if (!ConcernedDepartmentOptions) {
                 alert("Please select the Concerned Department");
                 return;
             }
@@ -762,7 +813,7 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
                         Details: tabledata,
                         PartNo: PartNo,
                         DeviationNo: DeviationNo,
-                        SupplierName: selectedConcernedDepartment,
+                        SupplierName: ConcernedDepartmentOptions,
                         BatchNo: BatchNo,
                         PlantName: selectedPlantId,
                         ProductionQTY: ProductionQTY,
@@ -834,11 +885,12 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
 
                                             <div className='col-md-4'>
                                                 <label className='font'>Concerned Department <span className='Mantorystar'>*</span></label>
-                                                <Dropdown
+                                                <input type="text" className='form-control' value={ConcernedDepartmentOptions} readOnly />
+                                                {/* <Dropdown
                                                     options={ConcernedDepartmentOptions}
                                                     selectedKey={selectedConcernedDepartment}
-                                                    onChange={(e, option) => setSelectedConcernedDepartment(option?.key as number)}
-                                                />
+                                                    onChange={(e, option) => setSelectedConcernedDepartment(option?.key)}
+                                                /> */}
                                             </div>
 
                                         </div>
@@ -1133,7 +1185,7 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
                                         </div>
                                     </div>
 
-                                    {((COOApprover || QualityApprover || PlantHeadApprover) || (Status === 'Rejected' || Status === 'Send Back')) && (
+                                    {((COOApprover || QualityApprover || PlantHeadApprover) || (Status === 'Rejected' || Status === 'Send Back' || Status === "Pending for Approval")) && (
                                         <>
                                             <div className='heading1'>
                                                 <label>Recommendation Engineering</label>
@@ -1172,7 +1224,7 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
                                         </>
                                     )}
 
-                                    {(((QualityApprover || PlantHeadApprover) && SpecialApproval === "Yes") || ((Status === 'Rejected' || Status === 'Send Back') && COORemark)) && (
+                                    {(((QualityApprover || PlantHeadApprover) && SpecialApproval === "Yes") || ((Status === 'Rejected' || Status === 'Send Back' || Status === "Pending for Approval") && COORemark)) && (
                                         <div>
                                             <div className='heading1'>
                                                 <label>Recommendation COO</label>
@@ -1188,7 +1240,7 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
                                         </div>
                                     )}
 
-                                    {((PlantHeadApprover && SpecialApproval === "No") || ((Status === 'Rejected' || Status === 'Send Back') && DeviationRecommended && Functional && Remark && Fitment && SpecialNote)) && (
+                                    {((PlantHeadApprover && SpecialApproval === "No") || ((Status === 'Rejected' || Status === 'Send Back' || Status === "Pending for Approval") && DeviationRecommended && Functional && Remark && Fitment && SpecialNote)) && (
                                         <>
                                             <div className='heading1'>
                                                 <label>Recommendation Quality</label>
@@ -1286,6 +1338,14 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
                                                     </Upload>
                                                 )}
                                             </div>
+                                            <div className='col-md-3'>
+                                                <label htmlFor="RiskAssessment" className='font'>Risk Assessment</label> <br></br>
+                                                <label className='fonttext'>{selectedRiskAssessment}</label>
+                                            </div>
+                                            <div className='col-md-3'>
+                                                <label htmlFor="RiskAssessmentDescription" className='font'>Risk Assessment Description </label> <br></br>
+                                                <label className='fonttext'>{RiskAssessmentDescription}</label>
+                                            </div>
                                         </div>
                                     </div>
                                     <div className='row my-3'>
@@ -1301,6 +1361,34 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
                                                     Exit
                                                 </Link>
                                             </div>
+                                        </div>
+                                        <div className="mt-5">
+                                            <table className="table table-bordered mb-0">
+                                                <tbody>
+                                                <tr>
+                                                    <td
+                                                    className="text-start font"
+                                                    style={{ width: "40%", padding: "4px 8px", lineHeight: "1.2" }}
+                                                    >
+                                                    Format No. - SonaBLW/F/QA/29
+                                                    </td>
+
+                                                    <td
+                                                    className="text-center font"
+                                                    style={{ width: "20%", padding: "4px 8px", lineHeight: "1.2" }}
+                                                    >
+                                                    Rev. No. - 03
+                                                    </td>
+
+                                                    <td
+                                                    className="text-end font"
+                                                    style={{ width: "40%", padding: "4px 8px", lineHeight: "1.2" }}
+                                                    >
+                                                    w.e.f. - 17.02.2024
+                                                    </td>
+                                                </tr>
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
                                 </div>

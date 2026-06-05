@@ -29,6 +29,7 @@ export const ReportDashboard: React.FC<ISonaDeviationProps> = (props: ISonaDevia
         BatchNo: "",
         PlantName: "",
         RequestorName: "",
+        NextApproverName: "",
         DeviationType: "",
         Status: ""
     });
@@ -86,8 +87,8 @@ export const ReportDashboard: React.FC<ISonaDeviationProps> = (props: ISonaDevia
 
         const parentItems = await spCrudOps.getData(
             "DeviationDetails",
-            "*,ID,PartNo,DeviationNo,SupplierName,BatchNo,PlantName,ProductionQTY,RequestorName,Author/ID,Author/Title",
-            "Author",
+            "*,ID,PartNo,DeviationNo,SupplierName,BatchNo,PlantName,ProductionQTY,RequestorName,Author/ID,NextApprover/ID,NextApprover/Title,Author/Title",
+            "Author,NextApprover",
             "",
             { column: "ID", isAscending: true },
             5000,
@@ -115,6 +116,7 @@ export const ReportDashboard: React.FC<ISonaDeviationProps> = (props: ISonaDevia
                 BatchNo: item.BatchNo,
                 PlantName: item.PlantName,
                 RequestorName: item.RequestorName,
+                NextApproverName: item.NextApprover?.Title,
                 DeviationType: item.DeviationType,
                 Status: item.Status
             })
@@ -130,6 +132,7 @@ export const ReportDashboard: React.FC<ISonaDeviationProps> = (props: ISonaDevia
                 (!filters.BatchNo || item.BatchNo?.toLowerCase().includes(filters.BatchNo.toLowerCase())) &&
                 (!filters.PlantName || item.PlantName?.toLowerCase().includes(filters.PlantName.toLowerCase())) &&
                 (!filters.RequestorName || item.RequestorName?.toLowerCase().includes(filters.RequestorName.toLowerCase())) &&
+                (!filters.NextApproverName || item.NextApprover?.Title?.toLowerCase().includes(filters.NextApproverName.toLowerCase())) &&
                 (!filters.DeviationType || item.DeviationType?.toLowerCase().includes(filters.DeviationType.toLowerCase())) &&
                 (!filters.Status || item.Status?.toLowerCase().includes(filters.Status.toLowerCase()));
 
@@ -155,6 +158,7 @@ export const ReportDashboard: React.FC<ISonaDeviationProps> = (props: ISonaDevia
             BatchNo: "",
             PlantName: "",
             RequestorName: "",
+            NextApproverName: "",
             DeviationType: "",
             Status: ""
         });
@@ -188,6 +192,7 @@ export const ReportDashboard: React.FC<ISonaDeviationProps> = (props: ISonaDevia
             "Batch No": item.BatchNo,
             "Plant Name": item.PlantName,
             "Requestor Name": item.RequestorName,
+            "Next Approver": item.NextApprover?.Title,
             "Deviation Type": item.DeviationType,
             "Status": item.Status
         }));
@@ -251,7 +256,7 @@ export const ReportDashboard: React.FC<ISonaDeviationProps> = (props: ISonaDevia
                     />
                 </div>
 
-                <div className="col">
+                {/* <div className="col">
                     <Dropdown
                         placeholder="Department Name"
                         options={supplierOptions}
@@ -260,7 +265,7 @@ export const ReportDashboard: React.FC<ISonaDeviationProps> = (props: ISonaDevia
                             handleFilterChange("SupplierName", option?.key as string)
                         }
                     />
-                </div>
+                </div> */}
 
                 {/* <div className="col">
                     <input placeholder="Batch No" className="form-control"
@@ -343,10 +348,11 @@ export const ReportDashboard: React.FC<ISonaDeviationProps> = (props: ISonaDevia
                                 <tr>
                                     <th className="px-4 py-2">Part No.</th>
                                     <th className="px-4 py-2">Deviation No</th>
-                                    <th className="px-4 py-2">Supplier Name</th>
+                                    {/* <th className="px-4 py-2">Supplier Name</th> */}
                                     <th className="px-4 py-2">Batch / Lot No </th>
                                     <th className="px-4 py-2">Plant Name</th>
                                     <th className="px-4 py-2">Requester Name</th>
+                                    <th className="px-4 py-2">Next Approver</th>
                                     <th className="px-4 py-2">Deviation Type</th>
                                     <th className="px-4 py-2">Status</th>
                                     <th className="px-4 py-2">View</th>
@@ -357,10 +363,11 @@ export const ReportDashboard: React.FC<ISonaDeviationProps> = (props: ISonaDevia
                                     <tr key={index} className="border-t">
                                         <td className="px-4 py-2">{item.PartNo}</td>
                                         <td className="px-4 py-2">{item.DeviationNo}</td>
-                                        <td className="px-4 py-2">{item.SupplierName}</td>
+                                        {/* <td className="px-4 py-2">{item.SupplierName}</td> */}
                                         <td className="px-4 py-2">{item.BatchNo}</td>
                                         <td className="px-4 py-2">{item.PlantName}</td>
                                         <td className="px-4 py-2">{item.RequestorName}</td>
+                                        <td className="px-4 py-2">{item.NextApprover?.Title}</td>
                                         <td className="px-4 py-2">{item.DeviationType}</td>
                                         <td className="px-4 py-2">{item.Status}</td>
                                         <td className="px-4 py-2">

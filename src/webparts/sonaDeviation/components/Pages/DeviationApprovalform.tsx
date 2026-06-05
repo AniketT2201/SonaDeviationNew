@@ -69,7 +69,7 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
         const [EngineeringName, setEngineeringName] = React.useState("");
         const [EngineeringProductionDate, setEngineeringProductionDate] = React.useState("");
         const [EngineeringDate, setEngineeringDate] = React.useState("");
-        const [SelectedSpecialApp, setSelectedSpecialApp] = useState<number | string>(undefined);
+        const [SelectedSpecialApp, setSelectedSpecialApp] = React.useState<string>("No");
 
         const [COORemark, setCOORemark] = React.useState("");
         const [RegionComment, setRegionComment] = React.useState("");
@@ -90,6 +90,8 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
         const [actionType, setActionType] = useState<"rework" | "reject" | "">("");
         const textareaRef = React.useRef<any>(null);
         const [Comments, setComments] = React.useState("");
+        const [selectedRiskAssessment, setSelectedRiskAssessment] = React.useState("");
+        const [RiskAssessmentDescription, setRiskAssessmentDescription] = React.useState("");
 
         const formatDate = (dateString: string) => {
             if (!dateString) return "";
@@ -126,10 +128,10 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
         }, [id]);
 
         React.useEffect(() => {
-            if (ApprovalMatrixdata) {
+            if (ApprovalMatrixdata && ApprovalMatrixdata.length > 0 && WorkflowHistorydata) {
                 displayWorkflow();
             }
-        }, [ApprovalMatrixdata])
+        }, [ApprovalMatrixdata, WorkflowHistorydata, Stage])
 
         const displayWorkflow = () => {
             const wf: JSX.Element[] = [];
@@ -137,22 +139,62 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
             // const _wf = approverJson.filter((item) => item.required === true);
             let isActive;
             let notActive = false;
+
+            // Get latest workflow history entry
+            const lastHistory = WorkflowHistorydata && WorkflowHistorydata.length > 0
+                ? WorkflowHistorydata[WorkflowHistorydata.length - 1]
+                : null;
+            
+            // Check if rejected
+            const isRejected =
+                lastHistory &&
+                lastHistory.CurrentStatus === "Rejected";
+
+            // Find rejected role
+            let rejectedRole = "";
+
+            if (isRejected && lastHistory.ActionTaken) {
+                rejectedRole = lastHistory.ActionTaken.split(" ")[0];
+            }
+            // Find rejected role index
+            const rejectedIndex = ApprovalMatrixdata
+                .filter(m => m.required === true)
+                .findIndex(m => m.Role === rejectedRole);
             ApprovalMatrixdata.filter(m => m.required === true).forEach((m, i) => {
-                // ApprovalMatrixdata.forEach((m, i) => {
-                //if (m.required === true) {
-                if (notActive === false && Stage !== 99) {
-                    if (Stage === i) {
-                        isActive = 'activeApprover';
-                        notActive = true;
+                // =========================
+                // REJECTED LOGIC
+                // =========================
+                if (isRejected) {
+                    if (m.Role === rejectedRole) {
+                        // Rejected approver → RED
+                        isActive = "rejected";
+                    }
+                    else if (i < rejectedIndex) {
+                        // Completed before rejection → GREEN
+                        isActive = "beforeactiveApprover";
                     }
                     else {
-                        isActive = 'beforeactiveApprover';
+                        // Pending after rejection → YELLOW
+                        isActive = "overrideStage";
                     }
                 }
+                // =========================
+                // NORMAL APPROVAL FLOW
+                // =========================
                 else {
-                    isActive = 'overrideStage';
+                    if (notActive === false && Stage !== 99) {
+                        if (Stage === i) {
+                            isActive = "activeApprover";
+                            notActive = true;
+                        }
+                        else {
+                            isActive = "beforeactiveApprover";
+                        }
+                    }
+                    else {
+                        isActive = "overrideStage";
+                    }
                 }
-
                 wf.push(
                     <ul className="main-menu">
                         <li className={`${m.Role} ${isActive}`.trim()}>
@@ -160,7 +202,6 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                         </li>
                     </ul>
                 );
-                //}
             });
 
             setWorkflowJSX(wf);
@@ -196,7 +237,7 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                         "EngineeringRemark", "EngineeringFunctional", "EngineeringFitment", "EngineeringSpecialNote", "EngineeringDeviationRecommended",
                         "EngineeringName", "EngineeringProductionDate", "EngineeringDate", "SpecialApproval",
                         "PlantHeadRemark", "PlantHeadDeviationAccepted", "PlantHeadProductionDate", "COORemark",
-                        "PlantHeadDate", "PlantHeadEffectiveness", "NextApprover/ID", "AttachmentFiles", "Comments"
+                        "PlantHeadDate", "PlantHeadEffectiveness", "NextApprover/ID", "AttachmentFiles", "Comments", "RiskAssessment", "RiskAssessmentDescription"
                     ).expand("NextApprover,AttachmentFiles")();
                 setPartNo(item.PartNo || "");
                 setDeviationNo(item.DeviationNo || "");
@@ -239,7 +280,7 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                 setEngineeringName(item.EngineeringName || "");
                 setEngineeringProductionDate(item.EngineeringProductionDate || "");
                 setEngineeringDate(item.EngineeringDate || "");
-                setSelectedSpecialApp(item.SpecialApproval || "");
+                setSelectedSpecialApp(item.SpecialApproval || "No");
 
                 setCOORemark(item.COORemark || "");
 
@@ -249,6 +290,9 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                 setPlantHeadDate(item.PlantHeadDate || "");
                 setPlantHeadEffectiveness(item.PlantHeadEffectiveness || "");
                 setComments(item.Comments || "");
+                setSelectedRiskAssessment(item.RiskAssessment || "");
+                setRiskAssessmentDescription(item.RiskAssessmentDescription || "");
+
 
                 let parsedDetails = [];
                 if (item.Details) {
@@ -368,19 +412,49 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                 if (Role === 'Engineering') {
 
                     // ✅ VALIDATION
-                    if (!SelectedSpecialApp) {
-                        alert("Please select Special Approval");
-                        setIsSubmitting(false);
-                        return;
-                    }
+                    // if (!SelectedSpecialApp) {
+                    //     alert("Please select Special Approval");
+                    //     setIsSubmitting(false);
+                    //     return;
+                    // }
 
                     if (SelectedEngineeringDeviationRecommended === 2) {
                         alert("Deviation Recommended is No. You cannot approve this request.");
                         setIsSubmitting(false);
                         return;
                     }
+                    if (!SelectedEngineeringDeviationRecommended) {
+                        alert("Please select Engineering Deviation Recommended.");
+                        setIsSubmitting(false);
+                        return;
+                    }
 
-                    if (SelectedSpecialApp === "No") {
+                    if (!EngineeringRemark) {
+                        alert("Please select Engineering Remark.");
+                        setIsSubmitting(false);
+                        return;
+                    }
+
+                    if (!EngineeringFunctional) {
+                        alert("Please select Engineering Functional.");
+                        setIsSubmitting(false);
+                        return;
+                    }
+
+                    if (!EngineeringFitment) {
+                        alert("Please select Engineering Fitment.");
+                        setIsSubmitting(false);
+                        return;
+                    }
+
+                    if (!EngineeringSpecialNote) {
+                        alert("Please select Engineering Special Note.");
+                        setIsSubmitting(false);
+                        return;
+                    }
+                    const specialApprovalValue = SelectedSpecialApp || "No";
+                    console.log("SelectedSpecialApp:", SelectedSpecialApp);
+                    if (specialApprovalValue === "No") {
                         updateFields = {
                             Stage: nextIndex || null,
                             Status: uptstatus,
@@ -399,7 +473,7 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                             SpecialApproval: SelectedSpecialApp || null
                         }
                     }
-                    else if (SelectedSpecialApp === "Yes") {
+                    else if (specialApprovalValue === "Yes") {
                         let aspercoo: any = [];
                         let newAppdata = ApprovalMatrixdata.filter(m => m.Role === "COO");
                         let oldcoowfHis = [...WorkflowHistorydata];
@@ -450,6 +524,12 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                 }
                 else if (Role === 'COO') {
 
+                    if (!COORemark) {
+                        alert("Please select COO Remark.");
+                        setIsSubmitting(false);
+                        return;
+                    }
+
                     const finalStatus = "Approved";
                     const finalStage = 0;
 
@@ -495,6 +575,37 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                         return;
                     }
 
+                    if (!SelectedDeviationRecommended) {
+                        alert("Please select Quality Deviation Recommended.");
+                        setIsSubmitting(false);
+                        return;
+                    }
+
+                    if (!Remark) {
+                        alert("Please select Quality Remark.");
+                        setIsSubmitting(false);
+                        return;
+                    }
+
+                    if (!Functional) {
+                        alert("Please select Quality Functional.");
+                        setIsSubmitting(false);
+                        return;
+                    }
+
+                    if (!Fitment) {
+                        alert("Please select Quality Fitment.");
+                        setIsSubmitting(false);
+                        return;
+                    }
+
+                    if (!SpecialNote) {
+                        alert("Please select Quality Special Note.");
+                        setIsSubmitting(false);
+                        return;
+                    }
+
+
                     updateFields = {
                         Stage: nextIndex || null,
                         WorkflowHistory: updatedHistory,
@@ -513,6 +624,25 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                     }
                 }
                 else if (Role === 'PlantHead') {
+
+                    if (!PlantHeadRemark) {
+                        alert("Please select Plant Head Remark.");
+                        setIsSubmitting(false);
+                        return;
+                    }
+
+                    if (!SelectedPlantHeadDeviationAccepted) {
+                        alert("Please select Plant Head Deviation Accepted.");
+                        setIsSubmitting(false);
+                        return;
+                    }
+
+                    if (!PlantHeadEffectiveness) {
+                        alert("Please select Plant Head Effectiveness.");
+                        setIsSubmitting(false);
+                        return;
+                    }
+
                     updateFields = {
                         Stage: nextIndex || null,
                         Status: uptstatus,
@@ -802,11 +932,19 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                                             </div>
                                         </div>
                                         {isEngineeringDashboard && (
-                                            <div className='col-md-4'>
-                                                <label htmlFor="Comments" className='font'>Comments </label> : &nbsp;&nbsp;
+                                            <div className='col-md-3'>
+                                                <label htmlFor="Comments" className='font'>Comments </label> <br></br>
                                                 <div><label className='fonttext' style={{ fontWeight: 'bold', color: 'red'}}>{Comments}</label></div>
                                             </div>
                                         )}
+                                        <div className='col-md-3'>
+                                            <label htmlFor="RiskAssessment" className='font'>Risk Assessment</label> <br></br>
+                                            <label className='fonttext'>{selectedRiskAssessment}</label>
+                                        </div>
+                                        <div className='col-md-3'>
+                                            <label htmlFor="RiskAssessmentDescription" className='font'>Risk Assessment Description </label> <br></br>
+                                            <label className='fonttext'>{RiskAssessmentDescription}</label>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -876,18 +1014,20 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                                         <div className='main-formcontainer'>
                                             <div className='row mb-20'>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Special Approval <span className="Mantorystar">*</span></label>
+                                                    <label className='font'>Special Approval <span className="Mantorystar">* If Special Approval is set to Yes, the request will go to the COO for approval.</span></label>
                                                     <Dropdown
                                                         className='formtext-control'
                                                         options={YesNoOptions}
                                                         selectedKey={SelectedSpecialApp}
-                                                        onChange={(e, option) =>
-                                                            setSelectedSpecialApp(option?.key as number)
+                                                        onChange={(e, option) => {
+                                                            console.log(option?.key);
+                                                            setSelectedSpecialApp(option?.key as string)
+                                                        }
                                                         }
                                                     />
                                                 </div>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Deviation Recommended</label>
+                                                    <label className='font'>Deviation Recommended <span className="Mantorystar">*</span></label>
                                                     <Dropdown
                                                         className='formtext-control'
                                                         options={yesNoOptions}
@@ -898,7 +1038,7 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                                                     />
                                                 </div>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Functional </label>
+                                                    <label className='font'>Functional <span className="Mantorystar">*</span></label>
                                                     <input type="text"
                                                         value={EngineeringFunctional}
 
@@ -908,7 +1048,7 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                                             </div>
                                             <div className='row mb-20'>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Remarks </label>
+                                                    <label className='font'>Remarks <span className="Mantorystar">*</span></label>
                                                     <textarea className="form-control" value={EngineeringRemark}
                                                         onChange={(e) => {
                                                             const textarea = e.currentTarget;
@@ -920,7 +1060,7 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                                                     />
                                                 </div>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Fitment </label>
+                                                    <label className='font'>Fitment <span className="Mantorystar">*</span></label>
                                                     <textarea className="form-control"
                                                         value={EngineeringFitment}
                                                         onChange={(e) => {
@@ -933,7 +1073,7 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                                                     />
                                                 </div>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Special Note </label>
+                                                    <label className='font'>Special Note <span className="Mantorystar">*</span></label>
                                                     <textarea className="form-control"
                                                         value={EngineeringSpecialNote}
                                                         onChange={(e) => {
@@ -974,29 +1114,29 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                                         <div className='main-formcontainer'>
                                             <div className='row mb-20'>
                                                 <div className='col-md-4'>
-                                                    <label className='font'> Special Approval</label> : &nbsp;&nbsp;
+                                                    <label className='font'> Special Approval <span className="Mantorystar">*</span></label> : &nbsp;&nbsp;
                                                     <label className='fonttext'>{SelectedSpecialApp}</label>
                                                 </div>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Deviation Recommended</label> : &nbsp;&nbsp;
+                                                    <label className='font'>Deviation Recommended <span className="Mantorystar">*</span></label> : &nbsp;&nbsp;
                                                     <label className='fonttext'>{SelectedEngineeringDeviationRecommended}</label>
                                                 </div>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Functional </label> : &nbsp;&nbsp;
+                                                    <label className='font'>Functional <span className="Mantorystar">*</span></label> : &nbsp;&nbsp;
                                                     <label className='fonttext'>{EngineeringFunctional}</label>
                                                 </div>
                                             </div>
                                             <div className='row mb-20'>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Remarks </label> : &nbsp;&nbsp;
+                                                    <label className='font'>Remarks <span className="Mantorystar">*</span></label> : &nbsp;&nbsp;
                                                     <label className='fonttext'>{EngineeringRemark}</label>
                                                 </div>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Fitment </label> : &nbsp;&nbsp;
+                                                    <label className='font'>Fitment <span className="Mantorystar">*</span></label> : &nbsp;&nbsp;
                                                     <label className='fonttext'>{EngineeringFitment}</label>
                                                 </div>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Special Note </label> : &nbsp;&nbsp;
+                                                    <label className='font'>Special Note <span className="Mantorystar">*</span></label> : &nbsp;&nbsp;
                                                     <label className='fonttext'>{EngineeringSpecialNote}</label>
                                                 </div>
                                             </div>
@@ -1025,7 +1165,7 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                                         <div className='main-formcontainer'>
                                             <div className='row mb-20'>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Remarks </label>
+                                                    <label className='font'>Remarks <span className="Mantorystar">*</span></label>
                                                     <textarea className="form-control" value={COORemark} onChange={e => setCOORemark(e.target.value)}></textarea>
                                                 </div>
                                             </div>
@@ -1040,7 +1180,7 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                                         <div className='main-formcontainer'>
                                             <div className='row mb-20'>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Remarks </label> : &nbsp;&nbsp;
+                                                    <label className='font'>Remarks <span className="Mantorystar">*</span></label> : &nbsp;&nbsp;
                                                     <label className='fonttext'>{COORemark}</label>
                                                 </div>
                                             </div>
@@ -1055,7 +1195,7 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                                         <div className='main-formcontainer'>
                                             <div className='row mb-20'>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Deviation Recommended</label>
+                                                    <label className='font'>Deviation Recommended <span className="Mantorystar">*</span></label>
                                                     <Dropdown
                                                         className='formtext-control'
                                                         options={yesNoOptions}
@@ -1066,11 +1206,11 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                                                     />
                                                 </div>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Functional </label>
+                                                    <label className='font'>Functional <span className="Mantorystar">*</span></label>
                                                     <input type="text" value={Functional} className='form-control' onChange={e => setFunctional(e.target.value)} />
                                                 </div>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Remarks </label>
+                                                    <label className='font'>Remarks <span className="Mantorystar">*</span></label>
                                                     <textarea className="form-control" value={Remark}
                                                         onChange={(e) => {
                                                             const textarea = e.currentTarget;
@@ -1085,7 +1225,7 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                                             </div>
                                             <div className='row mb-20'>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Fitment </label>
+                                                    <label className='font'>Fitment <span className="Mantorystar">*</span></label>
                                                     <textarea className="form-control" value={Fitment}
                                                         onChange={(e) => {
                                                             const textarea = e.currentTarget;
@@ -1097,7 +1237,7 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                                                     />
                                                 </div>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Special Note </label>
+                                                    <label className='font'>Special Note <span className="Mantorystar">*</span></label>
                                                     <textarea className="form-control" value={SpecialNote}
                                                         onChange={(e) => {
                                                             const textarea = e.currentTarget;
@@ -1134,25 +1274,25 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                                         <div className='main-formcontainer'>
                                             <div className='row mb-20'>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Deviation Recommended</label> : &nbsp;&nbsp;
+                                                    <label className='font'>Deviation Recommended <span className="Mantorystar">*</span></label> : &nbsp;&nbsp;
                                                     <label className='fonttext'>{SelectedDeviationRecommended}</label>
                                                 </div>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Functional </label> : &nbsp;&nbsp;
+                                                    <label className='font'>Functional <span className="Mantorystar">*</span></label> : &nbsp;&nbsp;
                                                     <label className='fonttext'>{Functional}</label>
                                                 </div>
                                                 <div className='col-md-4 '>
-                                                    <label className='font'>Remarks </label> : &nbsp;&nbsp;
+                                                    <label className='font'>Remarks <span className="Mantorystar">*</span></label> : &nbsp;&nbsp;
                                                     <label className='fonttext'>{Remark}</label>
                                                 </div>
                                             </div>
                                             <div className='row mb-20'>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Fitment </label> : &nbsp;&nbsp;
+                                                    <label className='font'>Fitment <span className="Mantorystar">*</span></label> : &nbsp;&nbsp;
                                                     <label className='fonttext'>{Fitment}</label>
                                                 </div>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Special Note </label> : &nbsp;&nbsp;
+                                                    <label className='font'>Special Note <span className="Mantorystar">*</span></label> : &nbsp;&nbsp;
                                                     <label className='fonttext'>{SpecialNote}</label>
                                                 </div>
                                             </div>
@@ -1181,7 +1321,7 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                                         <div className='main-formcontainer'>
                                             <div className='row mb-20'>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Deviation Accepted </label>
+                                                    <label className='font'>Deviation Accepted <span className="Mantorystar">*</span></label>
                                                     <Dropdown
                                                         className='formtext-control'
                                                         options={yesNoOptions}
@@ -1192,7 +1332,7 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                                                     />
                                                 </div>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Remarks </label>
+                                                    <label className='font'>Remarks <span className="Mantorystar">*</span></label>
                                                     <textarea className="form-control" value={PlantHeadRemark}
                                                         onChange={(e) => {
                                                             const textarea = e.currentTarget;
@@ -1204,7 +1344,7 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                                                     />
                                                 </div>
                                                 <div className='col-md-4'>
-                                                    <label className='font'>Effectiveness </label>
+                                                    <label className='font'>Effectiveness <span className="Mantorystar">*</span></label>
                                                     <textarea className="form-control" value={PlantHeadEffectiveness}
                                                         onChange={(e) => {
                                                             const textarea = e.currentTarget;
@@ -1283,6 +1423,34 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                                                 Exit
                                             </Link>
                                         </div>
+                                    </div>
+                                    <div className="mt-5">
+                                        <table className="table table-bordered mb-0">
+                                            <tbody>
+                                            <tr>
+                                                <td
+                                                className="text-start font"
+                                                style={{ width: "40%", padding: "4px 8px", lineHeight: "1.2" }}
+                                                >
+                                                Format No. - SonaBLW/F/QA/29
+                                                </td>
+
+                                                <td
+                                                className="text-center font"
+                                                style={{ width: "20%", padding: "4px 8px", lineHeight: "1.2" }}
+                                                >
+                                                Rev. No. - 03
+                                                </td>
+
+                                                <td
+                                                className="text-end font"
+                                                style={{ width: "40%", padding: "4px 8px", lineHeight: "1.2" }}
+                                                >
+                                                w.e.f. - 17.02.2024
+                                                </td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>

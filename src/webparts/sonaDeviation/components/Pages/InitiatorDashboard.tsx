@@ -48,8 +48,8 @@ export const InitiatorDashboard: React.FC<ISonaDeviationProps> = (props: ISonaDe
 
         const parentItems = await spCrudOps.getRootData(
             "DeviationDetails",
-            "ID,PartNo,DeviationNo,SupplierName,BatchNo,PlantName,ProductionQTY,RequestorName,ProductionDate,Status,DeviationType,Author/ID,WorkflowHistory",
-            "Author",
+            "ID,PartNo,DeviationNo,SupplierName,BatchNo,PlantName,ProductionQTY,RequestorName,ProductionDate,Status,DeviationType,Author/ID,NextApprover/ID,NextApprover/Title,WorkflowHistory",
+            "Author,NextApprover",
             "AuthorId eq " + props.id,
             { column: "ID", isAscending: true },
             5000,
@@ -145,10 +145,11 @@ export const InitiatorDashboard: React.FC<ISonaDeviationProps> = (props: ISonaDe
                                 <tr>
                                     <th className="px-4 py-2">Part No.</th>
                                     <th className="px-4 py-2">Deviation No</th>
-                                    <th className="px-4 py-2">Supplier Name</th>
+                                    {/* <th className="px-4 py-2">Supplier Name</th> */}
                                     <th className="px-4 py-2">Batch / Lot No </th>
                                     <th className="px-4 py-2">Plant Name</th>
                                     <th className="px-4 py-2">Requester Name</th>
+                                    <th className="px-4 py-2">Next Approver</th>
                                     <th className="px-4 py-2">Deviation Type</th>
                                     <th className="px-4 py-2">Status</th>
                                     <th className="px-4 py-2">View</th>
@@ -159,10 +160,11 @@ export const InitiatorDashboard: React.FC<ISonaDeviationProps> = (props: ISonaDe
                                     <tr key={index} className="border-t">
                                         <td className="px-4 py-2">{item.PartNo}</td>
                                         <td className="px-4 py-2">{item.DeviationNo}</td>
-                                        <td className="px-4 py-2">{item.SupplierName}</td>
+                                        {/* <td className="px-4 py-2">{item.SupplierName}</td> */}
                                         <td className="px-4 py-2">{item.BatchNo}</td>
                                         <td className="px-4 py-2">{item.PlantName}</td>
                                         <td className="px-4 py-2">{item.RequestorName}</td>
+                                        <td className="px-4 py-2">{item.NextApprover?.Title}</td>
                                         <td className="px-4 py-2">{item.DeviationType}</td>
                                         <td className="px-4 py-2">{item.Status}</td>
                                         <td className="px-4 py-2">
