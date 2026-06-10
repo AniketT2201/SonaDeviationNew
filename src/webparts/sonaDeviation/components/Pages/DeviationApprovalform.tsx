@@ -938,7 +938,12 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                                             <div>
 
                                                 {DeviationAttachments.length > 0 ? (
-                                                    <a href={getFullUrl(DeviationAttachments[0].ServerRelativeUrl)} target="_blank" rel="noopener noreferrer" >
+                                                    <a href="#" 
+                                                      onClick={(e) => {
+                                                        e.preventDefault();
+                                                        window.open(getFullUrl(DeviationAttachments[0].ServerRelativeUrl), "_blank", "noopener,noreferrer");
+                                                      }}
+                                                    >
                                                         {(DeviationAttachments[0].FileName)}
                                                     </a>
                                                 ) : (

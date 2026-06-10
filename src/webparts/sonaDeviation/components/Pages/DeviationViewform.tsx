@@ -640,7 +640,12 @@ export const DeviationViewForm = (props: ISonaDeviationProps) => {
                                             <div>
 
                                                 {DeviationAttachments.length > 0 ? (
-                                                    <a href={getFullUrl(DeviationAttachments[0].ServerRelativeUrl)} target="_blank" rel="noopener noreferrer" >
+                                                    <a href="#" 
+                                                      onClick={(e) => {
+                                                        e.preventDefault();
+                                                        window.open(getFullUrl(DeviationAttachments[0].ServerRelativeUrl), "_blank", "noopener,noreferrer");
+                                                      }}
+                                                    >
                                                         {(DeviationAttachments[0].FileName)}
                                                     </a>
                                                 ) : (
@@ -683,7 +688,7 @@ export const DeviationViewForm = (props: ISonaDeviationProps) => {
                                             </colgroup> */}
                                             <colgroup>
                                                 <col style={{ width: "45px" }} />
-                                                <col style={{ width: "150px" }} />
+                                                <col style={{ width: "130px" }} />
                                                 <col style={{ width: "140px" }} />
                                                 {showOthersColumn && <col style={{ width: "220px" }} />}
                                                 <col style={{ width: "120px" }} />

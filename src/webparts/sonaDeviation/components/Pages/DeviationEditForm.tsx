@@ -955,7 +955,10 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
                                                 {DeviationAttachments.deviationFile ? (
                                                     <div className="d-flex align-items-center gap-2 mt-1">
                                                         {/* File Name */}
-                                                        <a href={DeviationAttachments.deviationFile.ServerRelativeUrl} target="_blank" rel="noopener noreferrer">
+                                                        <a href="#" onClick={(e) => {
+                                                            e.preventDefault();
+                                                            window.open(DeviationAttachments.deviationFile.ServerRelativeUrl, "_blank", "noopener,noreferrer");
+                                                        }}>
                                                             {DeviationAttachments.deviationFile.FileName}
                                                         </a>
                                                         {/* Cross Icon */}
