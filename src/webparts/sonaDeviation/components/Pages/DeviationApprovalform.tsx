@@ -454,6 +454,20 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                     }
                     const specialApprovalValue = SelectedSpecialApp || "No";
                     console.log("SelectedSpecialApp:", SelectedSpecialApp);
+                    console.log("specialApprovalValue =", specialApprovalValue);
+                    console.log("====== ENGINEERING APPROVAL ======");
+                    console.log("SelectedSpecialApp:", SelectedSpecialApp);
+                    console.log("Stage:", Stage);
+
+                    console.table(
+                        ApprovalMatrixdata.map(x => ({
+                            Role: x.Role,
+                            Stage: x.Stage,
+                            Required: x.required
+                        }))
+                    );
+
+                    console.log("nextapproverdata", nextapproverdata);
                     if (specialApprovalValue === "No") {
                         updateFields = {
                             Stage: nextIndex || null,
@@ -705,7 +719,8 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                 }
 
                 const prevApproverData = ApprovalMatrixdata.filter(
-                    m => m.Stage === prevStageIndex && m.required === true
+                    // m => m.Stage === prevStageIndex && m.required === true
+                    m => m.Role === "Initiator"
                 );
 
                 const prevApprover = prevApproverData[0];
@@ -721,7 +736,7 @@ export const DeviationApproverForm = (props: ISonaDeviationProps) => {
                     Comment: RegionComment,
                     ActionTaken: `${role} Send Back`,
                     Date: formattedDate,
-                    CurrentStatus: `Send Back To ${prevApprover.Role}`
+                    CurrentStatus: `Send Back To Initiator`
                 };
 
                 workflowHistory.push(reworkEntry);

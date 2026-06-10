@@ -76,7 +76,7 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
 
         const [PlantNameOptions, setPlantNameOptions] = React.useState<IDropdownOption[]>([]);
         const [selectedPlantId, setSelectedPlantId] = React.useState<string | number>();
-        // const [selectedPlantName, setSelectedPlantName] = React.useState<string>("");
+        const [selectedPlantName, setSelectedPlantName] = React.useState<string>("");
 
         // ---------------------------------------------------------------------------
 
@@ -579,12 +579,10 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
             await fetchApprovalMatrix(plant, deviationType);
         };
 
-        const fetchApprovalMatrix = async (plant?: number, deviationType?: number) => {
-
+        const fetchApprovalMatrix = async (plant?: string | number, deviationType?: string | number) => {
             const spCrudOps = await SPCRUDOPS();
-
             let filterQuery = `Status eq 'Active'`;
-
+    
             const parentItems = await spCrudOps.getData(
                 "DeviationApprovalMatrix",
                 "Id,Role/RoleName,Level/Level,Level/Stage,Approver/Title,PlantName/ID,PlantName/PlantName,DeviationType,Approver/ID,Approver/EMail",
@@ -594,7 +592,7 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
                 5000,
                 props
             );
-
+    
             let matrix: any[] = [];
             matrix.push(
                 {
@@ -624,9 +622,8 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
             let filtermatrix = parentItems
             .filter(m => (m?.PlantName?.PlantName === plant && m?.DeviationType === deviationType))
             .sort((a, b) => a.Level.Stage - b.Level.Stage); // ✅ SORT BY STAGE
-
             filtermatrix.forEach((item: any, index: number) => {
-
+    
                 matrix.push({
                     Role: item.Role.RoleName,
                     User: item.Approver.Title,
@@ -638,6 +635,7 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
                 });
             });
             approverJson.current = matrix;
+            return parentItems;
             //approvalMatrix.current = parentItems;        
         };
 
@@ -794,6 +792,12 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
                 }));
 
                 let tabledata = JSON.stringify(tableData);
+                await fetchApprovalMatrix(
+                    selectedPlantId,
+                    SelectedDeviationType
+                );
+
+                console.log("Fresh Matrix", approverJson.current);
                 let apprid = approverJson.current.filter(m => m.required === true).filter(m => m.Stage === 1)[0]?.UserID || "";
 
                 let workflowHistory = [...WorkflowHistorydata];
@@ -816,6 +820,8 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
                         SupplierName: ConcernedDepartmentOptions,
                         BatchNo: BatchNo,
                         PlantName: selectedPlantId,
+                        RiskAssessment: selectedRiskAssessment,
+                        RiskAssessmentDescription: RiskAssessmentDescription,
                         ProductionQTY: ProductionQTY,
                         RequestorName: currentUserRef.current?.Title || "",
                         ProductionDate: ProductionDate ? new Date(ProductionDate) : null,
@@ -906,7 +912,7 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
                                                     selectedKey={selectedPlantId}
                                                     onChange={async (e, option) => {
                                                         setSelectedPlantId(option?.key as number);
-                                                        // setSelectedPlantName(option?.text as string);
+                                                        setSelectedPlantName(option?.text as string);
                                                         await loadWorkflow(option?.key as number, SelectedDeviationType);
                                                     }}
                                                 />
@@ -939,38 +945,59 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
                                             </div>
                                         </div>
                                     </div>
-
                                     <div className="heading1" style={{ marginTop: "10px" }}>
-                                        <label>Work Flow History</label>
+                                        <label>Upload Documents</label>
                                     </div>
                                     <div className="main-formcontainer">
-                                        <div className='Workflowbox'>
-                                            {WorkflowHistorydata && WorkflowHistorydata.length > 0 ? (
-                                                <table className="workflow-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                                    <thead>
-                                                        <tr>
-                                                            <th style={{ padding: '8px', textAlign: 'left' }}>Action By</th>
-                                                            <th style={{ padding: '8px', textAlign: 'left' }}>Action Taken</th>
-                                                            <th style={{ padding: '8px', textAlign: 'left' }}>Current Status</th>
-                                                            <th style={{ padding: '8px', textAlign: 'left' }}>Date</th>
-                                                            <th style={{ padding: '8px', textAlign: 'left' }}>Comment</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {WorkflowHistorydata.map((h: any, idx: number) => (
-                                                            <tr key={idx}>
-                                                                <td style={{ padding: '8px' }}>{h.CurrentApprover || ''}</td>
-                                                                <td style={{ padding: '8px' }}>{h.ActionTaken || ''}</td>
-                                                                <td style={{ padding: '8px' }}>{h.CurrentStatus || ''}</td>
-                                                                <td style={{ padding: '8px' }}>{h.Date || ''}</td>
-                                                                <td style={{ padding: '8px' }}>{h.Comment || ''}</td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            ) : (
-                                                <p>No workflow history</p>
-                                            )}
+                                        <div className='row mb-20'>
+                                            <div className='col-md-3'>
+                                                <label className='font'>Attachment <span className='Mantorystar'>*</span></label>
+                                                {DeviationAttachments.deviationFile ? (
+                                                    <div className="d-flex align-items-center gap-2 mt-1">
+                                                        {/* File Name */}
+                                                        <a href={DeviationAttachments.deviationFile.ServerRelativeUrl} target="_blank" rel="noopener noreferrer">
+                                                            {DeviationAttachments.deviationFile.FileName}
+                                                        </a>
+                                                        {/* Cross Icon */}
+                                                        <span style={{ color: "red", fontWeight: "bold", cursor: "pointer", fontSize: "18px" }}
+                                                            title="Delete attachment"
+                                                            onClick={() => deleteAttachment(DeviationAttachments.deviationFile, "deviationFile")}>
+                                                            ×
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <Upload
+                                                        beforeUpload={(file) => { setDeviationAttachFile(file); return false; }}
+                                                        className="upload-full-width">
+                                                        <Button className="upload-btn-full" icon={<UploadOutlined />} iconPosition="end"></Button>
+                                                    </Upload>
+                                                )}
+                                            </div>
+                                            <div className='col-md-4'>
+                                                <label className='font'>Risk Assessment <span className="Mantorystar">*</span></label>
+                                                <Dropdown
+                                                    options={RiskAssessment}
+                                                    selectedKey={selectedRiskAssessment}
+                                                    onChange={(e, option) => { 
+                                                        const selectedText = option?.text as string;
+                                                        setSelectedRiskAssessment(selectedText);
+                                                        const updatedRows = [...rows];
+                                                        updatedRows[0].RiskAssessment = selectedText;
+                                                        setRows(updatedRows);
+                                                    }} className="formtext-control"
+                                                />
+                                            </div>
+                                            <div className='col-md-4'>
+                                                <label htmlFor="RiskAssessmentDescription" className='font'>Risk Assessment Description <span className="Mantorystar">*</span></label>
+                                                <textarea className='form-control' style={{ resize: "none", overflowY: "hidden", height: "auto", fontSize: "13px" }} value={RiskAssessmentDescription}
+                                                    onChange={(e) => {
+                                                        const textarea = e.currentTarget;
+                                                        textarea.style.height = "auto";
+                                                        textarea.style.height = textarea.scrollHeight + "px";
+                                                        setRiskAssessmentDescription(textarea.value);
+                                                    }}
+                                                ></textarea>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -1311,41 +1338,36 @@ export const DeviationEditForm = (props: ISonaDeviationProps) => {
                                     )}
 
                                     <div className="heading1" style={{ marginTop: "10px" }}>
-                                        <label>Upload Documents</label>
+                                        <label>Work Flow History</label>
                                     </div>
                                     <div className="main-formcontainer">
-                                        <div className='row mb-20'>
-                                            <div className='col-md-3'>
-                                                <label className='font'>Attachment <span className='Mantorystar'>*</span></label>
-                                                {DeviationAttachments.deviationFile ? (
-                                                    <div className="d-flex align-items-center gap-2 mt-1">
-                                                        {/* File Name */}
-                                                        <a href={DeviationAttachments.deviationFile.ServerRelativeUrl} target="_blank" rel="noopener noreferrer">
-                                                            {DeviationAttachments.deviationFile.FileName}
-                                                        </a>
-                                                        {/* Cross Icon */}
-                                                        <span style={{ color: "red", fontWeight: "bold", cursor: "pointer", fontSize: "18px" }}
-                                                            title="Delete attachment"
-                                                            onClick={() => deleteAttachment(DeviationAttachments.deviationFile, "deviationFile")}>
-                                                            ×
-                                                        </span>
-                                                    </div>
-                                                ) : (
-                                                    <Upload
-                                                        beforeUpload={(file) => { setDeviationAttachFile(file); return false; }}
-                                                        className="upload-full-width">
-                                                        <Button className="upload-btn-full" icon={<UploadOutlined />} iconPosition="end"></Button>
-                                                    </Upload>
-                                                )}
-                                            </div>
-                                            <div className='col-md-3'>
-                                                <label htmlFor="RiskAssessment" className='font'>Risk Assessment</label> <br></br>
-                                                <label className='fonttext'>{selectedRiskAssessment}</label>
-                                            </div>
-                                            <div className='col-md-3'>
-                                                <label htmlFor="RiskAssessmentDescription" className='font'>Risk Assessment Description </label> <br></br>
-                                                <label className='fonttext'>{RiskAssessmentDescription}</label>
-                                            </div>
+                                        <div className='Workflowbox'>
+                                            {WorkflowHistorydata && WorkflowHistorydata.length > 0 ? (
+                                                <table className="workflow-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                                    <thead>
+                                                        <tr>
+                                                            <th style={{ padding: '8px', textAlign: 'left' }}>Action By</th>
+                                                            <th style={{ padding: '8px', textAlign: 'left' }}>Action Taken</th>
+                                                            <th style={{ padding: '8px', textAlign: 'left' }}>Current Status</th>
+                                                            <th style={{ padding: '8px', textAlign: 'left' }}>Date</th>
+                                                            <th style={{ padding: '8px', textAlign: 'left' }}>Comment</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {WorkflowHistorydata.map((h: any, idx: number) => (
+                                                            <tr key={idx}>
+                                                                <td style={{ padding: '8px' }}>{h.CurrentApprover || ''}</td>
+                                                                <td style={{ padding: '8px' }}>{h.ActionTaken || ''}</td>
+                                                                <td style={{ padding: '8px' }}>{h.CurrentStatus || ''}</td>
+                                                                <td style={{ padding: '8px' }}>{h.Date || ''}</td>
+                                                                <td style={{ padding: '8px' }}>{h.Comment || ''}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            ) : (
+                                                <p>No workflow history</p>
+                                            )}
                                         </div>
                                     </div>
                                     <div className='row my-3'>
