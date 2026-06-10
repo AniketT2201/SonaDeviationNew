@@ -19,10 +19,10 @@ const Layout: React.FC<ISonaDeviationProps> = (props) => {
   const location = useLocation(); // ✅ Now inside Router
 
   const hideSidebar =
-    location.pathname === "/NewRequest" ||
-    location.pathname === "/DeviationViewForm/:id" ||
-    location.pathname === "/DeviationEditForm/:id" ||
-    location.pathname === "/DeviationApproverForm/:id";
+    location.pathname.startsWith("/NewRequest") ||
+    location.pathname.startsWith("/DeviationViewForm") ||
+    location.pathname.startsWith("/DeviationEditForm") ||
+    location.pathname.startsWith("/DeviationApproverForm");
   return (
     <div className="container-fluid" style={{ display: 'flex', width: '100%' }}>
 
