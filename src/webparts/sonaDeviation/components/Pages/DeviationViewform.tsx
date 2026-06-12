@@ -351,9 +351,252 @@ export const DeviationViewForm = (props: ISonaDeviationProps) => {
         const isEngineeringDashboard = location.state?.fromEngineering || false;
 
 
+        // const generatePDF = async () => {
+
+        //     if (!pdfRef.current) return;
+
+        //     const element = pdfRef.current;
+
+        //     // 🔥 FIX: Force stable width for deployment rendering
+        //     const originalWidth = element.style.width;
+        //     element.style.width = "1200px";
+
+        //     const canvas = await html2canvas(element, {
+        //         scale: 3,
+        //         useCORS: true,
+        //         allowTaint: true,
+        //         backgroundColor: "#ffffff",
+        //         logging: false,
+        //         scrollX: 0,
+        //         scrollY: -window.scrollY,
+
+        //         onclone: (clonedDoc) => {
+
+        //             // =====================================================
+        //             // Heading SVG Conversion
+        //             // =====================================================
+
+        //             const headings =
+        //                 clonedDoc.querySelectorAll(".heading1");
+
+        //             headings.forEach((heading) => {
+
+        //                 const headingText =
+        //                     heading.querySelector("label")?.textContent ||
+        //                     heading.textContent ||
+        //                     "";
+
+        //                 heading.innerHTML = `
+        //         <svg xmlns="http://www.w3.org/2000/svg"
+        //             width="290" height="35" viewBox="0 0 290 35">
+        //             <defs>
+        //                 <linearGradient id="headingGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+        //                     <stop offset="0%" stop-color="#000000" />
+        //                     <stop offset="100%" stop-color="#bea1a1" />
+        //                 </linearGradient>
+        //             </defs>
+
+        //             <polygon points="0,0 174,0 290,35 0,35"
+        //                 fill="url(#headingGradient)" />
+
+        //             <text x="15" y="22"
+        //                 fill="white"
+        //                 font-size="13"
+        //                 font-family="Arial"
+        //                 font-weight="bold">
+        //                 ${headingText}
+        //             </text>
+        //         </svg>
+        //         `;
+
+        //                 const h = heading as HTMLElement;
+
+        //                 h.style.width = "290px";
+        //                 h.style.height = "35px";
+        //                 h.style.padding = "0";
+        //                 h.style.background = "transparent";
+        //                 h.style.clipPath = "none";
+        //             });
+
+
+        //             // =====================================================
+        //             // WORKFLOW FIX (IMPORTANT - DEPLOYMENT ISSUE FIX)
+        //             // =====================================================
+
+        //             const workflowContainers =
+        //                 clonedDoc.querySelectorAll(".displayWF");
+
+        //             workflowContainers.forEach((container) => {
+
+        //                 const displayWF = container as HTMLElement;
+
+        //                 // 🔥 FORCE SINGLE LINE LAYOUT
+        //                 displayWF.style.display = "flex";
+        //                 displayWF.style.flexDirection = "row";
+        //                 displayWF.style.flexWrap = "nowrap";
+        //                 displayWF.style.alignItems = "center";
+        //                 displayWF.style.justifyContent = "space-between";
+        //                 displayWF.style.gap = "6px";
+        //                 displayWF.style.padding = "10px";
+        //                 displayWF.style.backgroundColor = "#333";
+        //                 displayWF.style.width = "100%";
+        //                 displayWF.style.boxSizing = "border-box";
+        //                 displayWF.style.overflow = "hidden";
+
+        //                 const menus =
+        //                     displayWF.querySelectorAll(".main-menu");
+
+        //                 const totalMenus = menus.length;
+        //                 const containerWidth = 1200; // FIXED WIDTH FOR PDF
+        //                 const gap = 6;
+
+        //                 const menuWidth =
+        //                     (containerWidth -
+        //                         ((totalMenus - 1) * gap) -
+        //                         20) / totalMenus;
+
+        //                 menus.forEach((menu) => {
+
+        //                     const htmlMenu = menu as HTMLElement;
+
+        //                     htmlMenu.style.display = "flex";
+        //                     htmlMenu.style.flex = "1 1 0";
+        //                     htmlMenu.style.minWidth = "0";
+        //                     htmlMenu.style.margin = "0";
+        //                     htmlMenu.style.padding = "0";
+        //                     htmlMenu.style.listStyle = "none";
+        //                     htmlMenu.style.flexWrap = "nowrap";
+        //                     htmlMenu.style.justifyContent = "center";
+
+        //                     const li =
+        //                         htmlMenu.querySelector("li") as HTMLElement;
+
+        //                     if (!li) return;
+
+        //                     const text =
+        //                         li.textContent?.trim() || "";
+
+        //                     let bgColor = "#555";
+
+        //                     if (li.classList.contains("beforeactiveApprover")) {
+        //                         bgColor = "#0A9A00";
+        //                     }
+        //                     else if (li.classList.contains("overrideStage")) {
+        //                         bgColor = "#FFB233";
+        //                     }
+        //                     else if (li.classList.contains("activeApprover")) {
+        //                         bgColor = "#ED7D31";
+        //                     }
+        //                     else if (li.classList.contains("rejected")) {
+        //                         bgColor = "#ff0000";
+        //                     }
+
+        //                     const width = Math.max(menuWidth, 180);
+        //                     const height = 50;
+
+        //                     li.innerHTML = `
+        //             <svg xmlns="http://www.w3.org/2000/svg"
+        //                 width="${width}" height="${height}"
+        //                 viewBox="0 0 ${width} ${height}">
+
+        //                 <polygon points="
+        //                     0,0
+        //                     ${width - 20},0
+        //                     ${width},25
+        //                     ${width - 20},50
+        //                     0,50
+        //                     20,25"
+        //                     fill="${bgColor}" />
+
+        //                 <text x="${width / 2}" y="25"
+        //                     fill="white"
+        //                     font-size="13"
+        //                     font-family="Arial"
+        //                     font-weight="bold"
+        //                     text-anchor="middle"
+        //                     dominant-baseline="middle">
+        //                     ${text}
+        //                 </text>
+        //             </svg>
+        //             `;
+
+        //                     li.style.width = "100%";
+        //                     li.style.height = "50px";
+        //                     li.style.display = "flex";
+        //                     li.style.alignItems = "center";
+        //                     li.style.justifyContent = "center";
+        //                     li.style.whiteSpace = "nowrap";
+        //                     li.style.overflow = "hidden";
+        //                     li.style.padding = "0";
+        //                     li.style.margin = "0";
+        //                     li.style.background = "transparent";
+        //                     li.style.clipPath = "none";
+        //                 });
+        //             });
+        //         }
+        //     });
+
+        //     // restore width
+        //     element.style.width = originalWidth;
+
+        //     const imgData = canvas.toDataURL("image/png", 1.0);
+
+        //     const pdf = new jsPDF("p", "mm", "a4");
+
+        //     const pdfWidth = 210;
+        //     const pdfHeight = 297;
+
+        //     const imgWidth = pdfWidth;
+
+        //     const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        //     let heightLeft = imgHeight;
+        //     let position = 0;
+
+        //     pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight, undefined, "FAST");
+
+        //     heightLeft -= pdfHeight;
+
+        //     while (heightLeft > 0) {
+
+        //         position = heightLeft - imgHeight;
+
+        //         pdf.addPage();
+
+        //         pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight, undefined, "FAST");
+
+        //         heightLeft -= pdfHeight;
+        //     }
+
+        //     const pdfBlobUrl = pdf.output("bloburl");
+        //     window.open(pdfBlobUrl, "_blank");
+        // };
+
+
         const generatePDF = async () => {
 
-            if (!pdfRef.current) return;
+            // 🚀 Open browser tab instantly
+            const pdfWindow = window.open("", "_blank");
+
+            if (pdfWindow) {
+                pdfWindow.document.write(`
+            <html>
+                <head>
+                    <title>Generating PDF...</title>
+                </head>
+                <body style="font-family:Arial;text-align:center;padding-top:100px;">
+                    <h3>Generating PDF...</h3>
+                    <p>Please wait while the PDF is being generated...</p>
+                </body>
+            </html>
+        `);
+                pdfWindow.document.close();
+            }
+
+            if (!pdfRef.current) {
+                pdfWindow?.close();
+                return;
+            }
 
             const element = pdfRef.current;
 
@@ -418,7 +661,6 @@ export const DeviationViewForm = (props: ISonaDeviationProps) => {
                         h.style.clipPath = "none";
                     });
 
-
                     // =====================================================
                     // WORKFLOW FIX (IMPORTANT - DEPLOYMENT ISSUE FIX)
                     // =====================================================
@@ -430,7 +672,6 @@ export const DeviationViewForm = (props: ISonaDeviationProps) => {
 
                         const displayWF = container as HTMLElement;
 
-                        // 🔥 FORCE SINGLE LINE LAYOUT
                         displayWF.style.display = "flex";
                         displayWF.style.flexDirection = "row";
                         displayWF.style.flexWrap = "nowrap";
@@ -447,7 +688,7 @@ export const DeviationViewForm = (props: ISonaDeviationProps) => {
                             displayWF.querySelectorAll(".main-menu");
 
                         const totalMenus = menus.length;
-                        const containerWidth = 1200; // FIXED WIDTH FOR PDF
+                        const containerWidth = 1200;
                         const gap = 6;
 
                         const menuWidth =
@@ -498,7 +739,7 @@ export const DeviationViewForm = (props: ISonaDeviationProps) => {
                     <svg xmlns="http://www.w3.org/2000/svg"
                         width="${width}" height="${height}"
                         viewBox="0 0 ${width} ${height}">
-                        
+
                         <polygon points="
                             0,0
                             ${width - 20},0
@@ -553,7 +794,16 @@ export const DeviationViewForm = (props: ISonaDeviationProps) => {
             let heightLeft = imgHeight;
             let position = 0;
 
-            pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight, undefined, "FAST");
+            pdf.addImage(
+                imgData,
+                "PNG",
+                0,
+                position,
+                imgWidth,
+                imgHeight,
+                undefined,
+                "FAST"
+            );
 
             heightLeft -= pdfHeight;
 
@@ -563,14 +813,39 @@ export const DeviationViewForm = (props: ISonaDeviationProps) => {
 
                 pdf.addPage();
 
-                pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight, undefined, "FAST");
+                pdf.addImage(
+                    imgData,
+                    "PNG",
+                    0,
+                    position,
+                    imgWidth,
+                    imgHeight,
+                    undefined,
+                    "FAST"
+                );
 
                 heightLeft -= pdfHeight;
             }
 
+            // const pdfBlobUrl = pdf.output("bloburl");
+
+            // // 🚀 Load PDF into already-opened tab
+            // if (pdfWindow) {
+            //     pdfWindow.location.href = pdfBlobUrl;
+            // } else {
+            //     window.open(pdfBlobUrl, "_blank");
+            // }
+
             const pdfBlobUrl = pdf.output("bloburl");
-            window.open(pdfBlobUrl, "_blank");
+
+            if (pdfWindow) {
+                pdfWindow.location.href = pdfBlobUrl.toString();
+            } else {
+                window.open(pdfBlobUrl.toString(), "_blank");
+            }
         };
+
+
 
         return (
             <div ref={pdfRef} className='MainUplodForm' style={{ margin: "5px 0px" }}>
@@ -640,11 +915,11 @@ export const DeviationViewForm = (props: ISonaDeviationProps) => {
                                             <div>
 
                                                 {DeviationAttachments.length > 0 ? (
-                                                    <a href="#" 
-                                                      onClick={(e) => {
-                                                        e.preventDefault();
-                                                        window.open(getFullUrl(DeviationAttachments[0].ServerRelativeUrl), "_blank", "noopener,noreferrer");
-                                                      }}
+                                                    <a href="#"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            window.open(getFullUrl(DeviationAttachments[0].ServerRelativeUrl), "_blank", "noopener,noreferrer");
+                                                        }}
                                                     >
                                                         {(DeviationAttachments[0].FileName)}
                                                     </a>
